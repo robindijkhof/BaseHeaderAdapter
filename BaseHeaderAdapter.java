@@ -1,6 +1,5 @@
 package mypackage;
 
-import android.content.ClipData;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,17 +37,13 @@ public abstract class BaseHeaderAdapter<ITEM> extends RecyclerView.Adapter<Recyc
             case ITEM_VIEW_TYPE_ITEM:{
                 v = LayoutInflater.from(parent.getContext()).inflate(itemLayoutId, parent, false);
                 viewHolder = getItemViewHolder(v);
-
-                if(viewHolder.getAdapterPosition()>-1)
-                    onCreateItemViewHolder((ITEM)items.get(viewHolder.getAdapterPosition()), (ItemViewHolder) viewHolder);
+                onCreateItemViewHolder((ItemViewHolder) viewHolder);
                 break;
             }
             case ITEM_VIEW_TYPE_HEADER:{
                 v = LayoutInflater.from(parent.getContext()).inflate(headerLayoutId, parent, false);
                 viewHolder = getHeaderViewHolder(v);
-
-                if(viewHolder.getAdapterPosition()>-1)
-                    onCreateHeaderViewHolder((Header)items.get(viewHolder.getAdapterPosition()), (HeaderViewHolder) viewHolder);
+                onCreateHeaderViewHolder((HeaderViewHolder) viewHolder);
                 break;
             }
         }
@@ -85,34 +80,21 @@ public abstract class BaseHeaderAdapter<ITEM> extends RecyclerView.Adapter<Recyc
         addHeaders();
     }
 
-    public void addItem(ITEM item){
-        ArrayList<ITEM> itemUnder = new ArrayList<>();
-        boolean headerAdded = false;
-        int size = items.size()-1;
-        if(shouldAddHeader((ITEM)items.get(items.size()-1), item)){
-            createHeader(itemUnder);
-        }
-        items.add(item);
+    public Header getFirstHeader(int position){
+        if(position == -1) return null;
 
-        if(headerAdded){
-            notifyItemRangeInserted(size, 2);
-        }else{
-            notifyItemInserted(size+1);
+        int header = getFirstHeaderAbovePosition(position);
+        if(header == -1) return null;
+
+        if(items.get(header) instanceof BaseHeaderAdapter.Header){
+            return (BaseHeaderAdapter.Header)items.get(header);
         }
+        else return null;
     }
 
-    public void addItem(int position, ITEM item){
-        items.add(position, item);
-        int lastAbove = getLastItemAbovePosition(position);
-        int lastBelow = getLastItemBelowPosition(position);
-        int headerAbove = getFirstHeaderAbovePosition(position);
-
-        Header header = createHeader((ArrayList<ITEM>) items.subList(lastAbove, lastBelow));
-        items.set(headerAbove, header);
-
-        notifyItemRangeChanged(headerAbove, lastBelow);
+    public Object getItem(int position){
+        return items.get(position);
     }
-
 
 
     private void addHeaders(){
@@ -138,8 +120,8 @@ public abstract class BaseHeaderAdapter<ITEM> extends RecyclerView.Adapter<Recyc
     }
 
     private int getFirstHeaderAbovePosition(int itemPosition){
-        if(itemPosition<items.size() && itemPosition > 0){
-            for(int i = itemPosition -1; i > 0; i--){
+        if(itemPosition<items.size() && itemPosition >= 0){
+            for(int i = itemPosition; i >= 0; i--){
                 if(items.get(i) instanceof BaseHeaderAdapter.Header){
                     return i;
                 }
@@ -148,27 +130,6 @@ public abstract class BaseHeaderAdapter<ITEM> extends RecyclerView.Adapter<Recyc
         return -1;
     }
 
-    private int getLastItemAbovePosition(int itemPosition){
-        if(itemPosition<items.size() && itemPosition > 0){
-            for(int i = itemPosition -1; i > 0; i--){
-                if(items.get(i) instanceof BaseHeaderAdapter.Header){
-                    return i+1;
-                }
-            }
-        }
-        return -1;
-    }
-
-    private int getLastItemBelowPosition(int itemPosition){
-        if(itemPosition<items.size() && itemPosition >= 0){
-            for(int i = itemPosition; i < items.size(); i++){
-                if(items.get(i) instanceof BaseHeaderAdapter.Header){
-                    return i-1;
-                }
-            }
-        }
-        return items.size()-1;
-    }
 
     /**
      * ItemViewHolder class. Create a custom MyItemViewHolder object which extends ItemViewHolder.
@@ -210,17 +171,15 @@ public abstract class BaseHeaderAdapter<ITEM> extends RecyclerView.Adapter<Recyc
 
     /**
      * Call when a new HeaderViewHolder is created for the RecyclerView.
-     * @param header the header for the HeaderViewHolder
      * @param headerViewHolder the newly created HeaderViewHolder
      */
-    abstract void onCreateHeaderViewHolder(Header header, HeaderViewHolder headerViewHolder);
+    abstract void onCreateHeaderViewHolder(HeaderViewHolder headerViewHolder);
 
     /**
      * Call when a new ItemViewHolder is created for the RecyclerView.
-     * @param item the item for the ItemViewHolder
      * @param itemViewHolder the newly created ItemViewHolder
      */
-    abstract void onCreateItemViewHolder(ITEM item, ItemViewHolder itemViewHolder);
+    abstract void onCreateItemViewHolder(ItemViewHolder itemViewHolder);
 
     /**
      * Method the get a new HeaderViewHolder. Your custom HeaderViewHolder should extend HeaderViewHolder
